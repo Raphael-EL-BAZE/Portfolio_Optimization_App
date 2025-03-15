@@ -140,20 +140,38 @@ st.sidebar.info("""
 # Get fundatmental info of Tickers
 #@st.cache_data(ttl=3600)
 def get_ticker_info(tickers_and_benchmarks):
-    """Récupère les informations fondamentales des tickers depuis Yahoo Finance et les met en cache."""
-    #st.write("Fetching data from Yahoo Finance...")  # Vérifie si cette ligne s'affiche à chaque exécution
+    """Récupère les informations fondamentales des tickers depuis Yahoo Finance et les met en cache, avec formatage du Market Cap."""
+    
+    def format_market_cap(value):
+        """Formate Market Cap avec séparateurs de milliers et ajoute M, B, T si nécessaire."""
+        if not isinstance(value, (int, float)):
+            return "N/A"
+
+        if value >= 1e12:  # Trillion
+            return f"${value / 1e12:,.2f} T"
+        elif value >= 1e9:  # Billion
+            return f"${value / 1e9:,.2f} B"
+        elif value >= 1e6:  # Million
+            return f"${value / 1e6:,.2f} M"
+        else:  # Format normal avec séparateurs de milliers
+            return f"${value:,.0f}"
+
     info_dict = {}
-    for ticker in tickers_and_benchmarks:
+    for ticker in selected_tickers:
         try:
             info = yf.Ticker(ticker).info
+            market_cap = info.get("marketCap", "N/A")
+            formatted_market_cap = format_market_cap(market_cap) if market_cap != "N/A" else "N/A"
+
             info_dict[ticker] = {
                 "Sector": info.get("sector", "N/A"),
                 "Industry": info.get("industry", "N/A"),
-                "Market Cap": info.get("marketCap", "N/A"),
+                "Market Cap": formatted_market_cap,  # Format appliqué ici
                 "Country": info.get("country", "N/A")
             }
         except:
             continue
+
     return info_dict
 
 with main_tab[0]:  
@@ -192,9 +210,9 @@ with main_tab[0]:
     # ---------------------------------------
     if "Correlation Matrix" in selected_outputs:
         st.markdown("<h3 style='color: #2ECC71;'>Correlation Matrix</h3>", unsafe_allow_html=True)
-        corr_matrix = data_tickers_and_benchmarks_returns.corr()
+        corr_matrix = ((data_tickers_and_benchmarks_returns.corr()) * 100).round(2)
         fig = px.imshow(corr_matrix, text_auto=True, aspect="auto", color_continuous_scale="RdBu_r")
-        fig.update_layout(title="Correlation Matrix", xaxis_title="Ticker", yaxis_title="Ticker")
+        fig.update_layout(title="Correlation Matrix (%)", xaxis_title="Ticker", yaxis_title="Ticker")
         st.plotly_chart(fig)
         st.markdown("<hr style='border:1px solid gray'>", unsafe_allow_html=True)
 
@@ -214,14 +232,34 @@ with main_tab[0]:
     # ---------------------------------------
     if "Beta vs Benchmark" in selected_outputs:
         st.markdown("<h3 style='color: #2ECC71;'>Beta vs Benchmark</h3>", unsafe_allow_html=True)
+
+        # Calcul du Beta
         beta_dict = {}
         cov_matrix = data_tickers_and_benchmarks_returns.cov()
         benchmark_var = data_tickers_and_benchmarks_returns[benchmark_ticker].var()
+
         for ticker in tickers_and_benchmarks:
             if ticker != benchmark_ticker:
-                beta_dict[ticker] = cov_matrix.loc[ticker, benchmark_ticker] / benchmark_var
-        beta_df = pd.DataFrame.from_dict(beta_dict, orient='index', columns=["Beta"]).T
-        st.dataframe(beta_df)
+                beta_dict[ticker] = round(cov_matrix.loc[ticker, benchmark_ticker] / benchmark_var, 2)
+
+        # Conversion en DataFrame pour affichage graphique
+        beta_chart_data = pd.DataFrame(list(beta_dict.items()), columns=["Ticker", "Beta"])
+
+        # Graphique à barres avec Plotly
+        fig = px.bar(beta_chart_data, x="Ticker", y="Beta", 
+                    text="Beta", text_auto=True,
+                    title="Beta vs. Benchmark",
+                    color="Beta", color_continuous_scale="Viridis")
+
+        # Personnalisation du graphique
+        fig.update_traces(marker_line_color='black', marker_line_width=1.5, textfont_size=14)
+        fig.update_layout(xaxis_title="Ticker", yaxis_title="Beta", 
+                        title_x=0.0, template="plotly_dark")
+
+        # Affichage du graphique
+        st.plotly_chart(fig)
+
+        # Séparateur
         st.markdown("<hr style='border:1px solid gray'>", unsafe_allow_html=True)
 
     # ---------------------------------------
