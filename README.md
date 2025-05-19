@@ -2,7 +2,7 @@
 
 [![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)](https://streamlit.io/)
-[![Skfolio](https://img.shields.io/badge/Skfolio-grey?style=for-the-badge&logoColor=white)](https://skfolio.org/index.html)
+[![Skfolio](https://img.shields.io/badge/Skfolio-violet?style=for-the-badge&logoColor=white)](https://skfolio.org/index.html)
 ![Quantitative Finance](https://img.shields.io/badge/Quantitative_Finance-0A66C2?style=for-the-badge)
 
 ---
